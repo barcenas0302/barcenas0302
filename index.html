@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de accesos directos HTML5</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #38bdf8;
+    --accent-2: #818cf8;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+    --ok: #34d399;
+    --err: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #0f172a, #1e1b4b);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .wrap { width: 100%; max-width: 640px; }
+  header { text-align: center; margin-bottom: 1.5rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .3rem; }
+  header p { color: var(--muted); margin: 0; font-size: .9rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  }
+  label { display: block; font-size: .85rem; color: var(--muted); margin: 1rem 0 .35rem; }
+  label:first-of-type { margin-top: 0; }
+  input[type="text"], select {
+    width: 100%;
+    padding: .65rem .8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #0f172a;
+    color: var(--text);
+    font-size: .95rem;
+  }
+  input[type="text"]:focus, select:focus { outline: none; border-color: var(--accent); }
+  .hint { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 180px; }
+  .btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: .8rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform .1s, opacity .2s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn:active { transform: scale(.99); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .status {
+    margin-top: 1rem;
+    padding: .7rem .9rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.ok { background: rgba(52,211,153,.12); color: var(--ok); border: 1px solid rgba(52,211,153,.3); }
+  .status.err { background: rgba(248,113,113,.12); color: var(--err); border: 1px solid rgba(248,113,113,.3); }
+  .steps { margin-top: 1.5rem; font-size: .85rem; color: var(--muted); }
+  .steps h2 { font-size: .95rem; color: var(--text); margin: 0 0 .5rem; }
+  .steps ol { margin: 0; padding-left: 1.2rem; line-height: 1.6; }
+  code { background: #0f172a; padding: .1rem .35rem; border-radius: 4px; color: var(--accent); }
+  footer { text-align: center; color: var(--muted); font-size: .75rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Generador de accesos directos HTML5</h1>
+    <p>Crea un acceso directo para tu archivo o sitio HTML5 y colócalo en el escritorio.</p>
+  </header>
+
+  <div class="card">
+    <label for="name">Nombre del acceso directo</label>
+    <input type="text" id="name" placeholder="Mi página HTML5" autocomplete="off">
+
+    <label for="target">Ruta o URL del archivo HTML5</label>
+    <input type="text" id="target" placeholder="https://ejemplo.com/index.html  o  C:\Users\tu\pagina.html" autocomplete="off">
+    <div class="hint">Acepta una URL (http/https) o una ruta local a un archivo <code>.html</code>.</div>
+
+    <div class="row">
+      <div>
+        <label for="os">Sistema operativo</label>
+        <select id="os">
+          <option value="windows">Windows (.url)</option>
+          <option value="linux">Linux (.desktop)</option>
+          <option value="mac">macOS (.webloc)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn" id="generate">Descargar acceso directo</button>
+    <div class="status" id="status"></div>
+
+    <div class="steps">
+      <h2>Cómo colocarlo en el escritorio</h2>
+      <ol>
+        <li>Completa el nombre y la ruta/URL de tu archivo HTML5.</li>
+        <li>Elige tu sistema operativo y descarga el acceso directo.</li>
+        <li>Mueve el archivo descargado a tu carpeta <strong>Escritorio</strong>.</li>
+        <li>En Linux, haz clic derecho &rarr; <em>Permitir lanzar</em> si es necesario.</li>
+      </ol>
+    </div>
+  </div>
+
+  <footer>Funciona 100% en tu navegador &mdash; HTML, CSS y JavaScript puro. Nada se envía a ningún servidor.</footer>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $('status');
+
+  function showStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status show ' + (ok ? 'ok' : 'err');
+  }
+
+  function normalizeTarget(raw) {
+    const t = raw.trim();
+    if (!t) return null;
+    if (/^https?:\/\//i.test(t) || /^file:\/\//i.test(t)) return t;
+    // Ruta local: convertir a file:// URI
+    const isWin = /^[a-zA-Z]:[\\/]/.test(t);
+    if (isWin) {
+      return 'file:///' + t.replace(/\\/g, '/');
+    }
+    if (t.startsWith('/')) {
+      return 'file://' + t;
+    }
+    // Si no parece ruta ni URL, asumir https
+    return 'https://' + t;
+  }
+
+  function sanitizeFilename(name) {
+    return (name || 'acceso-directo').trim().replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || 'acceso-directo';
+  }
+
+  function buildShortcut(os, name, url) {
+    if (os === 'windows') {
+      return {
+        content: '[InternetShortcut]\r\nURL=' + url + '\r\n',
+        ext: '.url',
+        mime: 'application/x-mswinurl'
+      };
+    }
+    if (os === 'linux') {
+      return {
+        content: '[Desktop Entry]\nVersion=1.0\nType=Link\nName=' + name + '\nURL=' + url + '\nIcon=text-html\n',
+        ext: '.desktop',
+        mime: 'application/x-desktop'
+      };
+    }
+    // macOS .webloc (plist XML)
+    return {
+      content: '<?xml version="1.0" encoding="UTF-8"?>\n' +
+               '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n' +
+               '<plist version="1.0">\n<dict>\n\t<key>URL</key>\n\t<string>' + url + '</string>\n</dict>\n</plist>\n',
+      ext: '.webloc',
+      mime: 'application/xml'
+    };
+  }
+
+  function download(filename, content, mime) {
+    const blob = new Blob([content], { type: mime + ';charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  $('generate').addEventListener('click', () => {
+    const name = $('name').value.trim();
+    const rawTarget = $('target').value;
+    const os = $('os').value;
+
+    if (!name) { showStatus('Escribe un nombre para el acceso directo.', false); return; }
+
+    const url = normalizeTarget(rawTarget);
+    if (!url) { showStatus('Escribe la ruta o URL del archivo HTML5.', false); return; }
+
+    const shortcut = buildShortcut(os, name, url);
+    const filename = sanitizeFilename(name) + shortcut.ext;
+    download(filename, shortcut.content, shortcut.mime);
+    showStatus('Acceso directo "' + filename + '" descargado. Muévelo a tu escritorio.', true);
+  });
+
+  // Generar con Enter
+  ['name', 'target'].forEach(id => {
+    $(id).addEventListener('keydown', e => { if (e.key === 'Enter') $('generate').click(); });
+  });
+</script>
+</body>
+</html>
